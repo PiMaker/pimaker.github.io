@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: page
 title: initial commit
 author: \_pi\_
 ---
