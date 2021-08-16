@@ -1,3 +1,5 @@
+Below license is for the 'ed' theme used in this blog. The blog itself has all rights reserved to me, @PiMaker on GitHub.
+
 # Released under an MIT License
 
 Copyright (c) 2016–present Alex Gil, Karl Stolley, and contributors.
