@@ -38,11 +38,13 @@ title: "_pi_'s blog"
   <h2>entries</h2>
   <ul class="texts">
   {% for item in site.texts %}
+    {% if item.layout == "page" %}
     <li class="text-title">
-      <a href="{{ site.baseurl }}{{ item.url }}">
+    <a href="{{ site.baseurl }}{{ item.url }}">
         {{ item.title }}
-      </a>
+    </a>
     </li>
+    {% endif %}
   {% endfor %}
   </ul>
 </div>
