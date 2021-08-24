@@ -16,11 +16,11 @@ Here are some specs up front, if you're satisfied with piecing the story togethe
 
 * the code is on **[GitHub](https://github.com/pimaker/rvc)**
 * emulated RISC-V `rv32ima/su+Zifencei+Zicsr` instruction set
-* 64 MiB of RAM minus CPU state is stored in a 2048x2048 pixel Integer-Format texture (128bpp)
+* 64 MiB of RAM minus CPU state is stored in a 2048x2048 pixel Integer-Format texture (128 bpp)
 * Unity Custom Render Texture with buffer-swapping allows encoding/decoding state between frames
 * a pixel shader is used for emulation since compute shaders and UAV are not supported in VRChat
 
-_Be warned that this post might be a bit rambly at times, as I try to recall the pain and suffering of writing this shader. Let's hope it will at least turn out entertaining._
+_Be warned that this post might be a bit rambly at times, as I try to recall the many pitfalls of writing this shader. Let's hope it will at least turn out entertaining._
 
 
 ---
@@ -44,7 +44,7 @@ Thanks to the team organizing the event for providing me with the opportunity!
 My friend @fuopy over on twitter has posted video evidence as well:
 
 <blockquote class="twitter-tweet" data-dnt="true" data-theme="light"><p lang="en" dir="ltr">Linux running in a shader! By _pi_! Check it out!!<br>(5x speed of Linux running in a fragment shader emulating RISC-V) World link:<a href="https://t.co/jYnR8AZrQM">https://t.co/jYnR8AZrQM</a><br> <a href="https://twitter.com/hashtag/vrchat?src=hash&amp;ref_src=twsrc%5Etfw">#vrchat</a> <a href="https://twitter.com/hashtag/shaders?src=hash&amp;ref_src=twsrc%5Etfw">#shaders</a> <a href="https://t.co/gqW6qSXLb2">pic.twitter.com/gqW6qSXLb2</a></p>&mdash; fuopy (@fuopy) <a href="https://twitter.com/fuopy/status/1427051048032620544?ref_src=twsrc%5Etfw">August 15, 2021</a></blockquote>
-<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+<!-- <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script> -->
 
 The response I've received in the days afterwards was tremendously positive. A seriously big thank you to everyone who asked for details, suggested improvements, shared the world, or simply shook their head in disbelieve towards me.
 
@@ -98,7 +98,7 @@ Correct; By using compute shaders; And yes.
 
 A "compute shader" doesn't output an image, but simply data. It allows, in theory, to run highly parallel code on the GPU to compute any value. This is the principle behind CUDA, but is also used in games.
 
-That sounds too easy though - and indeed it is, VRChat doesn't allow you to use them in your creations. However, we can use some trickery here: By pointing Unity's "Camera" object at a quad rendered with our shader[1], and then assigning the output RenderTexture (the target buffer) to an input of our shader, we have essentially created a writable persistent state storage - the basic building block for a compute operation. Any pixel we write during the fragment (aka pixel) shader stage, we will be able to read back next frame.
+That sounds too easy though - and indeed it is, VRChat doesn't allow you to use them in your creations. However, we can use some trickery here: By pointing Unity's `Camera` object at a quad rendered with our shader[1], and then assigning the output RenderTexture (the target buffer) to an input of our shader, we have essentially created a writable persistent state storage - the basic building block for a compute operation. Any pixel we write during the fragment (aka pixel) shader stage, we will be able to read back next frame.
 
 ![Unity Camera Loop](https://raw.githubusercontent.com/pema99/shader-knowledge/main/images/CamLoop1.png)
 <small>(image credit: @pema99 and their fantastic [treasure trove](https://github.com/pema99/shader-knowledge) of forbidden VRChat shader knowledge)</small>
@@ -117,11 +117,13 @@ The issue with that is of course that a fragment shader runs in parallel for eve
 
 If you want to create a system capable of running Linux, you need to decide on which supported CPU architecture you want to emulate. Take a look into the [kernel source](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/arch), and you will see that there are quite a bunch available.
 
-I decided on RISC-V, mostly because I liked their mission in general - an open source CPU architecture is something to be fond of, and I had been following efforts to port Linux software to it with great interest. These days you can run a full [Debian](https://wiki.debian.org/RISC-V) on some hardware RISC-V boards.
-
 For our purposes, it is important that the ISA is as simple as possible, not just because I'm lazy, but also because shaders have both theoretical and practical limitations when it comes to program size and complexity.
 
+I decided on RISC-V, mostly because I liked their mission in general - an open source CPU architecture is something to be fond of, and I had been following efforts to port Linux software to it with great interest. These days you can run a full [Debian](https://wiki.debian.org/RISC-V) on some hardware RISC-V boards.
+
 It of course helps that all the specifications for RISC-V are [published freely](https://riscv.org/technical/specifications/) on the internet, and there are good reference implementations available (shout out to [takahirox/riscv-rust](https://github.com/takahirox/riscv-rust)).
+
+![RISC-V logo](../../assets/riscv.jpg)
 
 
 ---
@@ -142,7 +144,7 @@ Of course, some prep-work to translating already went into it. If you were to sh
 ```
 <small>(excerpt from the [UART driver](https://github.com/PiMaker/rvc/blob/cb6d051/src/uart.h); packing logic for UART state since HLSL only has 32-bit variables)</small>
 
-After a few days spent coding, I got to a point where the [riscv-tests](https://github.com/riscv/riscv-tests) suite passed for the integer base set (rv32i). The reason we're going for 32-bit is because the version of DirectX that VRChat is based on only supports 32-bit integers on GPUs. In fact, at least historically speaking, even most GPU _hardware_ has rather poor support for 64-bit integers.
+After a few evenings spent coding, I got to a point where the [riscv-tests](https://github.com/riscv/riscv-tests) suite passed for the integer base set (rv32i). The reason we're going for 32-bit is because the version of DirectX that VRChat is based on only supports 32-bit integers on GPUs. In fact, at least historically speaking, even most GPU _hardware_ has rather poor support for 64-bit integers.
 
 I had figured out already that for Linux support I needed the 'm' (integer multiplication) and 'a' (atomics) extensions, as well as CSR and memory fencing support. Atomics are implemented as simple direct operations, as the system features only one hart ('core') anyway. CSRs are fully implemented, fencing is simply a no-op in C (in HLSL this becomes more important).
 
@@ -334,6 +336,10 @@ A neat little side-effect of storing main memory in a texture, is that you can d
 
 ![RAM of linux kernel](https://i.ytimg.com/vi/MTW4sIL9Dpw/maxresdefault.jpg)
 
+The texture is also on display in the VRChat world, where you can take a closer look during execution yourself.
+
+---
+
 As an aside, you might be wondering why I called the cache "L1", as in "Layer 1". The reason is that in the future I'm planning on extending this concept to become a sort of hybrid between version 2 and 3. The idea is that there will be multiple ticks before a commit, each one being followed by a `Writeback` pass, that still only operates on the 128x128 texture (for cheap double-buffering) and flushes the L1 cache to a page-based L2 variant.
 
 The tricky part here is that this has to go away from being set- or fully-associated, as both of these variants would not only incur massive performance penalties for lots of branching, but also for the repeated texture taps (as I can't allocate any more registers for the L2 without crashing the compiler again). Instead, I'm planning on having only a few registers allocated that contain page base addresses that then point to a cache area in the state texture. This is somewhat hard to keep coherent though, and requires a new concept of stalling only until a `Writeback`, so I couldn't get it done in time for the initial presentation.
@@ -346,16 +352,135 @@ The tricky part here is that this has to go away from being set- or fully-associ
 ---
 # A Note on Inlining
 
+HLSL has the peculiarity that there are no function calls. *All* functions are inlined at the call site[6], if you call a function four times, it will be included four times in the output. This is of course recursive, so a function that calls other functions will also inline *those* at every callsite.
+
+This doesn't sound like a big issue, but it turns out it actually is - one of the biggest performance tricks I learned during development of the emulator, is that avoiding multiple callsites can improve performance quite a bit. I'm not 100% sure why that is, but I would assume it has to with locality/recency in the L1i cache of the GPU. So less code = less assembly = less space used in the instruction cache, and thus better performance.
+
+Additionally, how could it be any different, it also helps with actually getting the thing to compile. More inlines means more code to translate, and the shader compiler *really* hates code.
+
+This gives rise to some awkward optimizations, that would produce the opposite result almost anywhere else. The main example of this is coalescing memory reads and writes:
+
+The C code simply calls `mem_get_word` in the execution path of each instruction. This works, because the function call is cheap. But if it were to be inlined in every instruction that reads from memory, it would slow down the shader a lot. Instead, we do it preventatively - before even executing the instruction-specific code, check by way of the opcode if the instruction *might* need to read a value from memory. If that is the case, figure out where from (which is different for regular `lX` and atomic ops), and load the memory once. This way, `mem_get_word` only needs to be inlined once for the entire instruction emulation path.
+
+We also handle unaligned memory reads creatively. OTOH, this would be the obvious solution:
+```hlsl
+off = (read_addr & 3) * 8;
+val = mem_get_word(read_addr & (~3)) >> off;
+val |= mem_get_word(read_addr & (~3) + 4) << (24 - off);
+```
+
+...but instead, we use the one tool HLSL gives us to avoid multiple inlining, loops with the `[loop]` attribute that prevents them from being unrolled:
+```hlsl
+uint w1 = 0, w2 = 0;
+[loop]
+for (uint ui = 0; ui < ((read_addr & 0x3) ? 2 : 1); ui++) {
+    uint tmp = mem_get_word((read_addr & (~0x3)) + 0x4 * ui);
+    [flatten]
+    if (ui) { w2 = tmp; }
+    else { w1 = tmp; }
+}
+val = w1 >> ((do_mem_read & 0x3) * 8);
+val |= w2 << ((4 - (do_mem_read & 0x3)) * 8);
+```
+
+There are several places in the code that seemingly make no sense, but are actually intentionally written with the goal of avoiding inlining. Try to keep that in mind, if you dare read through the source yourself.
+
+
+<small>[6] there is a `[call]` attribute for switch/case, but once again I don't know why you wouldn't just use `[forcecase]`, in my testing it unconditionally made performance worse - it does however actually compile to a jump and return, meaning the capability must exist in shader assembly, but even functions with `[noinline]` (which is a valid attribute) are always inlined...</small>
+
 
 ---
-# Debug View
+# Excursion: Debug View
+
+For debugging purposes, and later on also actual data extraction, we need a way to communicate values from our shader to the user. And ideally not just the enduser, but also Udon, where we can further process the data on the CPU. Udon does not expose `Graphics.Blit`, which is the usual Unity way of reading shader output to the CPU, so we need some trickery again.
+
+The only way currently to get pixel data from a shader into Udon is via the `OnPostRender` callback. If the behaviour is on a `Camera` object, this will be called once per frame. Within it, `Buffer.ReadPixels` can be used to retrieve the actual pixel data into a Read/Write enabled static `Texture2D` object. The individual pixels can then be accessed as `Color` structs. But not so fast, a Unity `Color` contains four float values at 8-bit precision, and alpha is premultiplied - so simply reading in our state/RAM texture which uses Integer-Format with 128 bpp is out of the question.
+
+Instead, we write a secondary shader, a "helper" shader if you so will, that stretches the state texture (and only the state part, not the entire RAM) onto a seperate, floating-point enabled texture 6-times the width (and only using the 3 base color channels). Doing some "clever" floating-point math and bit-twiddling allows us to finally recover the original value.
+
+```hlsl
+#define PACK_MASK 0xFF
+#define PACK_SHIFT 8
+void pack_uint4(in uint4 data, out float3 result[6]) {
+    result[0] = (data.rgb & PACK_MASK) / 255.0f;
+    result[1] = ((data.rgb >> PACK_SHIFT) & PACK_MASK) / 255.0f;
+    result[2] = ((data.rgb >> (PACK_SHIFT*2)) & PACK_MASK) / 255.0f;
+    result[3] = ((data.rgb >> (PACK_SHIFT*3)) & PACK_MASK) / 255.0f;
+    result[4].r = (data.a & PACK_MASK) / 255.0f;
+    result[4].g = ((data.a >> PACK_SHIFT) & PACK_MASK) / 255.0f;
+    result[4].b = ((data.a >> (PACK_SHIFT*2)) & PACK_MASK) / 255.0f;
+    result[5].r = ((data.a >> (PACK_SHIFT*3)) & PACK_MASK) / 255.0f;
+    result[5].gb = 0;
+}
+#undef PACK_SHIFT
+#undef PACK_MASK
+```
+<small>(excerpt from [helpers.cginc](https://github.com/PiMaker/rvc/blob/6208912/_Nix/rvc/helpers.cginc), for encoding)</small>
+
+```csharp
+private const float MULT = 255.0f;
+private const float ADD = 0.5f;
+private uint decodePackedData(int x, int y, int c)
+{
+    Color[] col = new Color[6] {
+        Buffer.GetPixel(x, y),
+        Buffer.GetPixel(x + 128, y),
+        Buffer.GetPixel(x + 128*2, y),
+        Buffer.GetPixel(x + 128*3, y),
+        Buffer.GetPixel(x + 128*4, y),
+        Buffer.GetPixel(x + 128*5, y)
+    };
+
+    switch (c) {
+        case 0:
+            return (
+                (uint)(col[0].r * MULT + ADD) |
+                ((uint)(col[1].r * MULT + ADD) << 8) |
+                ((uint)(col[2].r * MULT + ADD) << 16) |
+                ((uint)(col[3].r * MULT + ADD) << 24)
+            );
+        // ...
+    }
+}
+```
+<small>(excerpt from [NixDebug.cs](https://github.com/PiMaker/rvc/blob/6208912/_Nix/NixDebug.cs), for decoding - this file is in desperate need of a cleanup :/)</small>
+
+This is fairly expensive, especially since it's running in Udon, so we limit the rendering of this `Camera` to once every 15 frames or so. This is certainly not pretty, but works well enough for debugging.
 
 
 ---
 # MMU and Devices
 
+The emulator includes a full SV32 memory management unit. I didn't even plan on adding this at first, but it turns out Linux only supports NOMMU mode on 64-bit RISC-V. I suppose this is a fairly niche use-case...
+
+Fortunately, this turned out easier than expected. I'm not sure what it was about the MMU, but it sounded quite difficult at first, only to turn out to be a straightforward implementation of the paging algorithm described in the _RISC-V privileged spec_.
+
+Once again, the two-layer pagewalk is performed with avoiding inlining in mind. The `load_page` function only has one callsite, with the recursive walk taken care of by a loop. I felt that the MMU logic was optimized enough that I could get away with using `mem_get_cached_or_tex`, which includes the cache logic - this means that page tables are fully coherent, and `sfence.vma` (what would be a TLB flush on x86) can be a no-op.
+
+---
+
+There are two devices on the emulated SoC that can issue interrupts - the CLINT timer and the UART. Additionally, software interrupts from both machine and supervisor mode are supported as well. All of this is covered under the umbrella term "trap handling", which deals with IRQs and exceptions.
+
+The timer's frequency is in sync with the CPU clock, i.e. one clock cycle equals one timer tick. That being said, this is not what our [device tree](https://github.com/PiMaker/rvc/blob/17da347/dts.dts) is communicating to Linux. The frequency given as `timebase-frequency = <0x1000000>;` ranges in the MHz, obviously way faster than what it actually runs at. I'm not entirely certain why that is necessary, but if I set this to a more natural 200 kHz-ish, Linux schedules it's own timer interrupt so frequently as to completely stall the boot process.
+
+The UART is a bit more tricky: While the emulator-facing side is a fairly simple 8250/16550a serial port, it also needs to communicate data out to the user and read inputs.
+
+Output is currently handled via a ring-buffer that is shared with Udon using the same mechanism as the _Debug View_ mentioned above. Udon then simply puts the characters to a Unity UI `Canvas`. I plan on replacing this with a fully shader-based terminal renderer in the future, this would also allow me to properly implement ANSI/VT100 escape codes - `vim` vs `emacs` live debate in VRChat anyone?
+
+Input is fairly simple, using a regular shader parameter to pass the input ASCII character from Udon (specifically a modified version of [@FairlySadPanda's Keyboard script](https://github.com/FairlySadPanda/UdonStringEvents)) to the shader. It also needs the _Debug View_ mechanism however, since the guest running in the emulator might not acknowledge the received character, in which case it will remain in the buffer and `RBR` will stay set.
+
+There is currently no disk emulated, since VRChat doesn't support world persistancy at the moment anyway. Linux boots entirely from RAM, the initramfs stays mounted as the rootfs.
+
+
+---
+# Payloads
+
+Speaking of the initramfs... `// TODO`
+
 
 ---
 # Conclusion
+
+`// TODO`
 
 
