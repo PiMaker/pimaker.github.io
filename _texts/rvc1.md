@@ -516,7 +516,9 @@ During development, I kept this project a secret for the longest time - I just l
 
 This project has given me the opportunity to learn about the inner workings of RISC-V, it taught me more about the Linux Kernel's boot process and hardware interface than most people would want to know, and it gave me an excuse to dive deeper and deeper into the magical world of shaders.
 
-I'll probably continue working on this project for a while, I still have a bunch of ideas at the ready. Maybe, just maybe, I'll even write more blog posts about it ;)
+Once again, feel free to read the full code on [GitHub](https://github.com/pimaker/rvc), or check out the world for yourself in [VRChat](https://vrchat.com/home/world/wrld_8126d9ef-eba5-4d49-9867-9e3c4f0b290d) - I'm always happy to chat in person, if you manage to catch me there :)
+
+I'll probably continue working on this project for a while, I still have a bunch of ideas at the ready. Maybe, just maybe, I'll even write more blog posts about it.
 
 So until next time,
 
