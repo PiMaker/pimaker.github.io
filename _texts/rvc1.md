@@ -22,6 +22,9 @@ Here are some specs up front, if you're satisfied with piecing the story togethe
 * Unity Custom Render Texture with buffer-swapping allows encoding/decoding state between frames
 * a pixel shader is used for emulation since compute shaders and UAV are not supported in VRChat
 
+![me standing in front of a booted linux in VRChat](../../assets/dab.jpg)
+<small>(image credit: [@pema99](https://github.com/pema99), thanks!)</small>
+
 _Be warned that this post might be a bit rambly at times, as I try to recall the many pitfalls of writing this shader. Let's hope it will at least turn out entertaining._
 
 
@@ -32,10 +35,10 @@ Around April 2020 I decided on writing an emulator capable of running a full Lin
 
 You can experience the result of all this for yourself by visiting [this VRChat world](https://vrchat.com/home/world/wrld_8126d9ef-eba5-4d49-9867-9e3c4f0b290d). You will require a VRChat account and the corresponding client, both of which are free.
 
-Here's me in my Avatar, standing in front of a kernel panic:
+Here's me in my Avatar again, standing in front of a kernel panic:
 
 ![me standing in front of a kernel panic](https://raw.githubusercontent.com/PiMaker/rvc/master/panic.jpg)
-
+<small>(image credit: [@pema99](https://github.com/pema99) as well, I believe)</small>
 
 This picture was taken after I showed off my work at the community meetup, a self-organized weekly get-together of VRChat creators from all over. Here's a recording of the live-stream where I presented it, it's fun to see everyone's reactions when I unveiled my big "secret project":
 
@@ -325,6 +328,9 @@ Version 2 got up to around 35-40 kHz in-game, pretty decent, but still not fast 
 
 This option has the least non-compute overhead of all the above. There's only two buffer swaps, and one of them is for the small area. This caching strategy (I call it the "L1 write cache") is what makes this shader fast enough to run Linux. 300 kHz is not out of the question on a high-end GPU, my 2080 Ti regularly pushes over 200.
 
+![pi calculated to 1234 places](../../assets/calc_pi.jpg)
+<small>(image credit: [@d4rkpl4y3r_vr](https://twitter.com/d4rkpl4y3r_vr), who had the patience to show that the emulator can calculate _pi_ to 1234 places)</small>
+
 However, there is now a glaring issue: If we run multiple ticks per iteration, we cannot use the 128x128 px state area as a cache anymore. In a fragment shader, we can only write output at the end of execution, but memory writes can happen anytime during emulation, and _must be architecturally visible_ immediately - that is, in RISC-V, a write followed by a read to the same address must always return the previously written value.[4]
 
 With this in mind, the L1 cache only has one place to live: The GPU's register file. I've been told modern architectures should support up to 64 kB of instance state (I suppose it can evict to VRAM?), but in practice the limit you're going to hit is once again the shader compiler. Use too many variables, and we're back at waiting 15 minutes for an "IPC error".
@@ -470,6 +476,9 @@ The UART is a bit more tricky: While the emulator-facing side is a fairly simple
 
 Output is currently handled via a ring-buffer that is shared with Udon using the same mechanism as the _Debug View_ mentioned above. Udon then simply puts the characters to a Unity UI `Canvas`. I plan on replacing this with a fully shader-based terminal renderer in the future, this would also allow me to properly implement ANSI/VT100 escape codes - `vim` vs `emacs` live debate in VRChat anyone?
 
+![UART bug showing ninux and bnnutils](../../assets/uart_output_bug.jpg)
+<small>(a bug in the UART output causing me to boot the knockoff "ninux" built with "GNU Bnnutils")</small>
+
 Input is rather simple too, using a regular shader parameter to pass the input ASCII character from Udon (specifically a modified version of [@FairlySadPanda's Keyboard script](https://github.com/FairlySadPanda/UdonStringEvents)) to the shader. It also needs the _Debug View_ mechanism however, since the guest running in the emulator might not acknowledge the received character, in which case it will remain in the buffer and `RBR` will stay set. This of course also limits input speed to how often we decide to render the performance-hungry debug `Camera`.
 
 There is currently no disk emulated, since VRChat doesn't support world persistancy at the moment anyway. Linux boots entirely from RAM, the initramfs stays mounted as the rootfs.
@@ -494,8 +503,8 @@ Of course, Linux is not the only thing that runs on the emulator. The [GitHub](h
 
 The first one, [Micropython](https://micropython.org/), provides a Python 3 REPL where you can experiment with writing your own code live in VRChat. The benefit of it being that it boots way quicker than Linux. I had to add a riscv32 port myself, based on the existing riscv64 version, it certainly isn't the cleanest but it boots and does what it's supposed to showcase.
 
-![Micropython with sirpinski triangle](https://via.placeholder.com/1280x720.jpg?text=placeholder: sirpinski triangle on micropython)
-<small>(image credit: @pema99, a sirpinski triangle rendered with Micropython)</small>
+![Micropython with sierpiński triangle](../../assets/sirpinski.jpg)
+<small>(image credit: [@pema99](https://github.com/pema99), a sierpiński triangle rendered with Micropython)</small>
 
 The **Rust-Test** or **rust_payload** program is my experiment in building native, `no-std` Rust for use on the emulator. I needed to patch the `rustc` compiler to not emit compressed instructions (which are not implemented, as decoding them would only take more assembly-space and RAM is actually the one resource we have more than enough of). This was among the first things to run successfully on the emulator!
 
