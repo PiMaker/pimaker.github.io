@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: page
 title: RISC-V Linux in a Pixel Shader
 author: \_pi\_
 ---
@@ -31,9 +31,12 @@ _Be warned that this post might be a bit rambly at times, as I try to recall the
 ---
 # About the project
 
-Around April 2020 I decided on writing an emulator capable of running a full Linux Kernel in VRChat. Due to the inherent limitations of that platform, the tool of choice had to be a shader. And after a few months of work, I'm now proud to present the worlds first (as far as I know) RISC-V CPU/SoC emulator in an HLSL pixel shader, capable of running up to 250 kHz (on a 2080 Ti) and booting Linux 5.13.5 with MMU support.
+Around March 2021 I decided on writing an emulator capable of running a full Linux Kernel in VRChat. Due to the inherent limitations of that platform, the tool of choice had to be a shader. And after a few months of work, I'm now proud to present the worlds first (as far as I know) RISC-V CPU/SoC emulator in an HLSL pixel shader, capable of running up to 250 kHz (on a 2080 Ti) and booting Linux 5.13.5 with MMU support.
 
 You can experience the result of all this for yourself by visiting [this VRChat world](https://vrchat.com/home/world/wrld_8126d9ef-eba5-4d49-9867-9e3c4f0b290d). You will require a VRChat account and the corresponding client, both of which are free.
+
+![rvc test world with booted linux](../../assets/rvc_overview.jpg)
+<small>(a screenshot of the VRChat world and interface to use the emulator)</small>
 
 Here's me in my Avatar again, standing in front of a kernel panic:
 
@@ -80,7 +83,7 @@ One of its co-creators, SCRN, has also written some less visual, but more techni
 
 Since discovering VRChat and the creator community, I have made several of my own custom Avatars and Worlds. Some are finished, some left as demonstrations of what _could_ be.
 
-And then, back in March or April of 2021, this little spark of an idea popped up in my head - if I could run anything I want in a VRChat world, then why not go for the end-goal straight away: Let's run a Linux kernel!
+And then, back in February or March of 2021, this little spark of an idea popped up in my head - if I could run anything I want in a VRChat world, then why not go for the end-goal straight away: Let's run a Linux kernel!
 
 
 ---
@@ -111,7 +114,7 @@ Of course there's a bunch of texture alignment and Unity trickery necessary to m
 
 The issue with that is of course that a fragment shader runs in parallel for every pixel on the texture, and every instance can only output to one of them in the end. We'll see how to (mostly) work around that later.
 
-<small>[0] I feel the need to point out that someone *did*, in fact, emulate a full CHIP-8 in Udon alone, and I believe I remember seeing someone on Discord mention they *almost* got some old Nintendo bootloader-ROM to boot - both projects were unusably slow however, and I can't find a link to either of them anymore...</small>
+<small>[0] I feel the need to point out that someone *did*, in fact, [emulate a full CHIP-8 in Udon alone](https://vrchat.com/home/world/wrld_d9092c8e-3484-4ee2-8598-fba583a918f9), and someone else [tried their hand at a 6502](https://vrchat.com/home/world/wrld_6528a90d-4806-4df9-b922-0af2fe7b0a9d) - both projects run very slowly however, certainly too slow to get an OS booted...</small>
 
 <small>[1] or in this case we're using a Custom Render Texture, which is basically the same thing, but more cursed*^W*compact</small>
 
@@ -236,6 +239,48 @@ typedef struct {
 
 Ignoring the syntax highlighter completely freaking out (which happens in vim and VS code too, never got around to fixing that...), this looks fairly readable in my opinion. The `$s` perl function is defined to print a normal struct definition, but also store the name and type into a hash table. This can then later be used to auto-generate the `encode` and `decode` functions.
 
+---
+
+In addition to that, _perlpp_ makes it possible to use loops in code-gen. This is tremendously helpful for dynamic sizing of caches and structs with many values (for example the 32 general purpose registers).
+
+One of the many problems with shader code is that HLSL doesn't support arrays in a meaningful way. Pointer math (and thus array indexing) just isn't a thing on the GPU, so writing to a non-constant index of an array is impossible. To work around this, there are several places in the code with patterns like this:
+
+```hlsl
+typedef struct {
+    <? for my $i (0..31) {
+        $s->("uint", "xreg$i");
+        print "\n    ";
+    } ?>
+    // ...
+} cpu_t;
+
+uint xreg(uint i) {
+    #define C(x) case x: return cpu.xreg##x;
+    if (i < 16) {
+        [flatten]
+        switch (i) {
+            C(0) C(1) C(2) C(3)
+            C(4) C(5) C(6) C(7)
+            C(8) C(9) C(10) C(11)
+            C(12) C(13) C(14) C(15)
+        }
+    } else {
+        [flatten]
+        switch (i) {
+            C(16) C(17) C(18) C(19)
+            C(20) C(21) C(22) C(23)
+            C(24) C(25) C(26) C(27)
+            C(28) C(29) C(30) C(31)
+        }
+    }
+    return 0xdeadc0de;
+    #undef C
+}
+```
+<small>(excerpt from [types.h.pp](https://github.com/PiMaker/rvc/blob/6208912/_Nix/rvc/src/types.h.pp#L187))</small>
+
+This function returns the content of general purpose register `i`, but since the registers are not an array, it has to use a (`[flatten]`ed) switch statement. The outer `if` is an optimization, so each call only needs to go through 16 `movc` instructions. `xreg` is called a lot, and considered one of the "inlineable" functions - that's why I'm not using a `[forcecase]`-style jumptable here; but we're getting way ahead of ourselves...
+
 
 ---
 # Instruction Decoding and DXSC Bugs
@@ -341,17 +386,19 @@ This caching strategy is the tradeoff I made for clock speed - memory write perf
 
 ---
 
-A neat little side-effect of storing main memory in a texture, is that you can display it visually! Here is a picture of the main memory with a fully booted linux kernel. Notice the 128 pixel border at the top which contains the state area to the left, and the fascinating blue memory pattern at the bottom (I believe this is due to early memory poisoning of the SLAB/SLUB allocator in the kernel, feel free to correct me on this):
+A neat little side-effect of storing main memory in a texture, is that you can display it visually! Below is a (jpeg-compressed and downsized) picture of the main memory with a fully booted linux kernel.
 
-![RAM of linux kernel](https://via.placeholder.com/1280x720.jpg?text=placeholder: picture of RAM)
+Notice the two large zeroed (black) areas at the top (128px state area + OpenSBI and reserved bootloader memory), and the fascinating blue memory pattern at the bottom (that's the high addresses, I believe the regular stripes are due to early memory poisoning of the SLAB/SLUB allocator in the kernel, feel free to correct me on this):
 
-The texture is also on display in the VRChat world, where you can take a closer look during execution yourself.
+![RAM of linux kernel](../../assets/rvc_ram.jpg)
+
+The texture is also on display in the VRChat world, where you can take a closer look during execution yourself. It's quite fun to see memory framention visibly become worse, the more userspace programs are started.
 
 ---
 
 As an aside, you might be wondering why I called the cache "L1", as in "Layer 1". The reason is that in the future I'm planning on extending this concept to become a sort of hybrid between version 2 and 3. The idea is that there will be multiple ticks before a commit, each one being followed by a `Writeback` pass, that still only operates on the 128x128 texture (for cheap double-buffering) and flushes the L1 cache to a page-based L2 variant.
 
-The tricky part here is that this has to go away from being set- or fully-associated, as both of these variants would not only incur massive performance penalties for lots of branching, but also for the repeated texture taps (as I can't allocate any more registers for the L2 without crashing the compiler again). Instead, I'm planning on having only a few registers allocated that contain page base addresses that then point to a cache area in the state texture. This is somewhat hard to keep coherent though, and requires a new concept of stalling only until a `Writeback`, so I couldn't get it done in time for the initial presentation.
+The tricky part here is that this has to go away from being set- or fully-associated, as both of these variants would not only incur massive performance penalties for lots of branching, but also for the repeated texture taps (as I can't allocate any more registers for the L2 without crashing the compiler again). Instead, I'm planning on having only a few registers allocated that contain page base addresses that then point to a linear cache area in the state texture. This is somewhat hard to keep coherent though, and requires a new concept of stalling only until a `Writeback`, so I couldn't get it done in time for the initial presentation.
 
 <small>[4] an exception to this rule is instruction loading, which only needs to be consistent after a `fencei` instruction - we can make use of this by omitting the somewhat expensive cache-load logic for memory reads and just tap the texture directly, simply stalling the CPU on `fencei` until the next `Commit` since it is called very infrequently</small>
 
