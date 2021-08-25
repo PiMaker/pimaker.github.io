@@ -41,9 +41,16 @@
   <meta property="og:description" content="{{ site.description }}">
   <meta property="og:type" content="website" />
 {% else %}
-{% if page.title %}<meta property="og:description" content="{{ page.title }}">{% else %}<meta property="og:description" content="{{ site.description }}">{% endif %}
+  {% if page.title %}<meta property="og:description" content="{{ page.title }}">{% else %}<meta property="og:description" content="{{ site.description }}">{% endif %}
   <meta property="og:type" content="article" />
 {% endif %}
+
+  <!-- Tracking - no, nothing bad, just a self-hosted view counter out of personal interest, I swear -->
+  {% if page.title %}
+  <script async src="https://tracking.pimaker.at/blog-{{ page.title }}/count.js"></script>
+  {% else %}
+  <script async src="https://tracking.pimaker.at/blog-unknown/count.js"></script>
+  {% endif %}
 
   <!-- CSS link -->
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/style.css" />

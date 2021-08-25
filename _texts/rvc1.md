@@ -1,10 +1,9 @@
 ---
 layout: page
 title: RISC-V Linux in a Pixel Shader
-author: \_pi\_
+author: _pi_
+date: 25.08.2021
 ---
-
-*25.08.2021*, by \_pi\_
 
 # Intro
 
