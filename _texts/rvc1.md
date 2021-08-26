@@ -5,6 +5,8 @@ author: _pi_
 date: 25.08.2021
 ---
 
+<small>for comments see [Hacker News](https://news.ycombinator.com/item?id=28312632), [r/programming](https://www.reddit.com/r/programming/comments/pbw5ze/linux_in_a_pixel_shader_a_riscv_emulator_for/) or [r/vrchat](https://www.reddit.com/r/VRchat/comments/pbwae1/i_made_linux_run_in_vrchat_info_in_comments/)</small>
+
 # Intro
 
 Sometimes you get hit with ideas for side-projects that sound absolutely plausible in your head. The idea grips you, your mind's eye can practically visualize it already. And then reality strikes, and you realize how utterly insane this would be, and just _how much_ work would need to go into it.
