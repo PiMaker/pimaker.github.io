@@ -1,6 +1,6 @@
 ---
 layout: page
-title: RISC-V Linux in a Pixel Shader
+title: Abusing Pixel Shaders - RISC-V Linux in VRChat
 author: _pi_
 date: 25.08.2021
 ---
