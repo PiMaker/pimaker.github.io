@@ -32,7 +32,7 @@ _Be warned that this post might be a bit rambly at times, as I try to recall the
 
 Around March 2021 I decided on writing an emulator capable of running a full Linux Kernel in VRChat. Due to the inherent limitations of that platform, the tool of choice had to be a shader. And after a few months of work, I'm now proud to present the worlds first (as far as I know) RISC-V CPU/SoC emulator in an HLSL pixel shader, capable of running up to 250 kHz (on a 2080 Ti) and booting Linux 5.13.5 with MMU support.
 
-You can experience the result of all this for yourself by visiting [this VRChat world](https://vrchat.com/home/world/wrld_8126d9ef-eba5-4d49-9867-9e3c4f0b290d). You will require a VRChat account and the corresponding client, both of which are free.
+You can experience the result of all this for yourself by visiting [this VRChat world](https://vrchat.com/home/world/wrld_8126d9ef-eba5-4d49-9867-9e3c4f0b290d). You will require a [VRChat](https://hello.vrchat.com/) account and the corresponding client, both of which are free and give you access to a massive social platform full of user-created content such as this (no VR headset required!).
 
 ![rvc test world with booted linux](../../assets/rvc_overview.jpg)
 <small>(a screenshot of the VRChat world and interface to use the emulator)</small>
@@ -48,7 +48,7 @@ This picture was taken after I showed off my work at the community meetup, a sel
 
 Thanks to the team organizing the event for providing me with the opportunity!
 
-My friend @fuopy over on twitter has posted video evidence as well:
+The project has been featured on [Adafruit](https://blog.adafruit.com/2021/08/16/linux-on-a-simulated-risc-v-chip-in-a-graphics-card-fragment-shader-riscv-linux-emulation/), and my friend @fuopy over on twitter has posted video evidence as well:
 
 <blockquote class="twitter-tweet" data-dnt="true" data-theme="light"><p lang="en" dir="ltr">Linux running in a shader! By _pi_! Check it out!!<br>(5x speed of Linux running in a fragment shader emulating RISC-V) World link:<a href="https://t.co/jYnR8AZrQM">https://t.co/jYnR8AZrQM</a><br> <a href="https://twitter.com/hashtag/vrchat?src=hash&amp;ref_src=twsrc%5Etfw">#vrchat</a> <a href="https://twitter.com/hashtag/shaders?src=hash&amp;ref_src=twsrc%5Etfw">#shaders</a> <a href="https://t.co/gqW6qSXLb2">pic.twitter.com/gqW6qSXLb2</a></p>&mdash; fuopy (@fuopy) <a href="https://twitter.com/fuopy/status/1427051048032620544?ref_src=twsrc%5Etfw">August 15, 2021</a></blockquote>
 
@@ -67,14 +67,13 @@ Udon works super well for anything that doesn't require high performance. The bu
 ![Udon Bird Sanctuary](../../assets/udon-ducks.webp)
 <small>(image credit: [u/1029chris](https://www.reddit.com/user/1029chris))</small>
 
-What really sparked my imagination however, was the discovery that you can embed your own, custom shaders within such a world. You can even put them on your Avatars! With this, the sky is the limit - and if you take even just a cursory look at what the shader community has done in VRChat, you realize that even that is only a limit meant to be broken.
+What really sparked my imagination however, was the discovery that you can embed your own, custom shaders within such a world. You can even put them on your Avatars! With shaders, the sky is the limit - and if you take even just a cursory look at what the community has done in VRChat, you realize that even that is only a limit meant to be broken.
 
 I like to compare it to demoscening. Instead of cramming stuff into limited storage space, you work around the limitations the platform imposes on you - there's so many things you can't do, that part of the challenge is to figure out what you _can_ do. Or as resident shader magician [@cnlohr](https://github.com/cnlohr/) put it:
 
 > I love how VRC programmers have a way of looking at [a] wall of restrictions, then find a way of switching their existence to a zero dimensional object for a moment, then they appear on the other side of that wall.
 
-![Treehouse in the Shade](../../assets/treehouse-in-the-shade.webp)
-<small>(image credit: [Ryan Schultz](https://ryanschultz.com/tag/treehouse-in-the-shade/))</small>
+![Treehouse in the Shade](../../assets/treehouse_in_the_shade.jpg)
 
 Pictured above is "Treehouse in the Shade", one of the most famous shader worlds, with an unfortunately tragic [backstory](https://medium.com/vrchat/remembering-1001-973ac391c4df). It is indeed a beautiful world I have spent a good amount of time in myself.
 
@@ -94,7 +93,7 @@ However, to quote from UdonSharp's documentation:
 
 > Udon can take on the order of 200x to 1000x longer to run a piece of code than the equivalent in normal C# depending on what you're doing. [...] Just 40 iterations of something can often be enough to visibly impact frame rate on a decent computer.
 
-With this performance constraint in mind, it becomes clear that CPU emulation is simply infeasible[0].
+With this performance constraint in mind, it becomes clear that CPU emulation is simply infeasible[<a href="#ref0" id="ref0b">0</a>].
 
 As far as I know there's only two ways you can write custom code and have it execute in VRChat: Udon and shaders. This is important for security concerns of course, as Udon is a VM and shaders only run on the GPU. Since the former is out of the question, that leaves us with shaders.
 
@@ -104,7 +103,7 @@ Correct; By using compute shaders; And yes.
 
 A "compute shader" doesn't output an image, but simply data. It allows, in theory, to run highly parallel code on the GPU to compute any value. This is the principle behind CUDA, but is also used in games.
 
-That sounds too easy though - and indeed it is, VRChat doesn't allow you to use them in your creations. However, we can use some trickery here: By pointing Unity's `Camera` object at a quad rendered with our shader[1], and then assigning the output RenderTexture (the target buffer) to an input of our shader, we have essentially created a writable persistent state storage - the basic building block for a compute operation. Any pixel we write during the fragment (aka pixel) shader stage, we will be able to read back next frame.
+That sounds too easy though - and indeed it is, VRChat doesn't allow you to use them in your creations. However, we can use some trickery here: By pointing Unity's `Camera` object at a quad rendered with our shader[<a href="#ref1" id="ref1b">1</a>], and then assigning the output RenderTexture (the target buffer) to an input of our shader, we have essentially created a writable persistent state storage - the basic building block for a compute operation. Any pixel we write during the fragment (aka pixel) shader stage, we will be able to read back next frame.
 
 ![Unity Camera Loop](https://raw.githubusercontent.com/pema99/shader-knowledge/main/images/CamLoop1.png)
 <small>(image credit: @pema99 and their fantastic [treasure trove](https://github.com/pema99/shader-knowledge) of forbidden VRChat shader knowledge)</small>
@@ -113,9 +112,9 @@ Of course there's a bunch of texture alignment and Unity trickery necessary to m
 
 The issue with that is of course that a fragment shader runs in parallel for every pixel on the texture, and every instance can only output to one of them in the end. We'll see how to (mostly) work around that later.
 
-<small>[0] I feel the need to point out that someone *did*, in fact, [emulate a full CHIP-8 in Udon alone](https://vrchat.com/home/world/wrld_d9092c8e-3484-4ee2-8598-fba583a918f9), and someone else [tried their hand at a 6502](https://vrchat.com/home/world/wrld_6528a90d-4806-4df9-b922-0af2fe7b0a9d) - both projects run very slowly however, certainly too slow to get an OS booted...</small>
+<small id="ref0">[0] I feel the need to point out that someone *did*, in fact, [emulate a full CHIP-8 in Udon alone](https://vrchat.com/home/world/wrld_d9092c8e-3484-4ee2-8598-fba583a918f9), and someone else [tried their hand at a 6502](https://vrchat.com/home/world/wrld_6528a90d-4806-4df9-b922-0af2fe7b0a9d) - both projects run very slowly however, certainly too slow to get an OS booted... <a href="#ref0b">⏎</a></small>
 
-<small>[1] or in this case we're using a Custom Render Texture, which is basically the same thing, but more cursed*^W*compact</small>
+<small id="ref1">[1] or in this case we're using a Custom Render Texture, which is basically the same thing, but more cursed*^W*compact <a href="#ref1b">⏎</a></small>
 
 
 ---
@@ -139,7 +138,7 @@ But back to making our emulator. First problem: Debugging a shader is hard. You 
 
 Luckily for us, [HLSL](https://docs.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl), the language we use to write shaders in Unity, is remarkably similar to regular C. And so the first iteration of the emulator was written in C.
 
-Of course, some prep-work to translating already went into it. If you were to show the code of the C version to any seasoned C programmer, they would shudder and call an exorcist[2].
+Of course, some prep-work to translating already went into it. If you were to show the code of the C version to any seasoned C programmer, they would shudder and call an exorcist[<a href="#ref2" id="ref2b">2</a>].
 
 ```c
 #define UART_GET1(x) ((cpu->uart.rbr_thr_ier_iir >> SHIFT_##x) & 0xff)
@@ -154,13 +153,13 @@ After a few evenings spent coding, I got to a point where the [riscv-tests](http
 
 I had figured out already that for Linux support I needed the 'm' (integer multiplication) and 'a' (atomics) extensions, as well as CSR and memory fencing support. Atomics are implemented as simple direct operations, as the system features only one hart ('core') anyway. CSRs are fully implemented, fencing is simply a no-op in C (in HLSL this becomes more important).
 
-Multiplication is fully working in C, but not in HLSL - it requires the `mulh` family of instructions, which give you the upper 32-bit of a 32 by 32 multiplication. This would require a single 64-bit multiply, which is not available for our shader target, so I decided to emulate it using double-precision floating-point numbers for now. This is stupid.[3]
+Multiplication is fully working in C, but not in HLSL - it requires the `mulh` family of instructions, which give you the upper 32-bit of a 32 by 32 multiplication. This would require a single 64-bit multiply, which is not available for our shader target, so I decided to emulate it using double-precision floating-point numbers for now. This is stupid.[<a href="#ref3" id="ref3b">3</a>]
 
 The C version remains fully functional even now, and new features will still be implemented there first. It's just *so much* easier to debug, plus compile times are magnitudes faster. The first porting effort happened even before it was able to boot Linux, I then gradually added support for more and more stuff by ping-ponging between the C and HLSL versions.
 
-<small>[2] It is important to note that this quality has translated to HLSL too, I know for a fact that I gave some shader devs nightmares.</small>
+<small id="ref2">[2] It is important to note that this quality has translated to HLSL too, I know for a fact that I gave some shader devs nightmares. <a href="#ref2b">⏎</a></small>
 
-<small>[3] Microsoft, please, I beg you, why would you add an instruction to DXIL but [not implement it in HLSL](https://github.com/microsoft/DirectXShaderCompiler/issues/2821)?!
+<small id="ref3">[3] Microsoft, please, I beg you, why would you add an instruction to DXIL but [not implement it in HLSL](https://github.com/microsoft/DirectXShaderCompiler/issues/2821)?! <a href="#ref3b">⏎</a></small>
 
 
 ---
@@ -240,7 +239,13 @@ Ignoring the syntax highlighter completely freaking out (which happens in vim an
 
 ---
 
-In addition to that, _perlpp_ makes it possible to use loops in code-gen. This is tremendously helpful for dynamic sizing of caches and structs with many values (for example the 32 general purpose registers).
+We also know the last address that contains any state, which we can use to place other, more linear data right after. In particular, this includes the CSR-area. CSRs are "Control and Status Registers", which are 4096 32-bit registers that can be accessed using specific instructions (`csrw`, `csrr`, `csrc`, etc.). They contain certain state about the CPU's environment, like the active privilege mode, IRQ enablement or the MMU base pointer (`SATP`).
+
+Aside from a few exceptions, these do not have special semantics on read and write, so it is enough to store them in a way that they can be indexed using their address. 4096 values means 1024 pixels, which we place 4-word aligned right after the last state-containing pixel. Reading now simply means calculating the offset from the CSR base (which is determined by _perlpp_ at compile-time) and doing a texture tap. Writing happens via a similar caching mechanism as main memory, more on that later.
+
+---
+
+In addition to all that, _perlpp_ makes it possible to use loops in code-gen. This is tremendously helpful for dynamic sizing of caches and structs with many values (for example the 32 general purpose registers).
 
 One of the many problems with shader code is that HLSL doesn't support arrays in a meaningful way. Pointer math (and thus array indexing) just isn't a thing on the GPU, so writing to a non-constant index of an array is impossible. To work around this, there are several places in the code with patterns like this:
 
@@ -357,7 +362,7 @@ At first, the main performance concern was _clock speed_. That is, how many CPU 
 * let's reserve a small area in the top-left, say 128x128 for our CPU state
 * have the shader run one tick per execution and write the result out, treating RAM the same as state - i.e. we run the fragment shader for _2048x2048 = 4194304_ pixels
 
-This is obviously rather inefficient, and would ultimately result in a clock speed of 1 cycle per frame. We can somewhat tweak this by running the CRT (or equivalent camera loop) multiple times per frame, but this incurs the hefty cost of double-buffering (and thus swapping) the entire 64 MiB texture every time. Instead, let's leave this concept behind a bit and focus on version 2:
+This is obviously rather inefficient, and would ultimately result in a clock speed of 1 cycle per frame. We can somewhat tweak this by running the CRT (Custom Render Texture, or equivalent camera loop with Udon) multiple times per frame, but this incurs the hefty cost of double-buffering (and thus swapping) the entire 64 MiB texture every time. Instead, let's leave this concept behind a bit and focus on version 2:
 
 * same 2048x2048 texture with 128x128 state area as before
 * shader split into two passes: `CPUTick` does a CPU cycle but writes to a memory cache area within the 128x128 pixels, and `Commit` writes that cache back to RAM
@@ -375,11 +380,11 @@ This option has the least non-compute overhead of all the above. There's only tw
 ![pi calculated to 1234 places](../../assets/calc_pi.jpg)
 <small>(image credit: [@d4rkpl4y3r_vr](https://twitter.com/d4rkpl4y3r_vr), who had the patience to show that the emulator can calculate _pi_ to 1234 places)</small>
 
-However, there is now a glaring issue: If we run multiple ticks per iteration, we cannot use the 128x128 px state area as a cache anymore. In a fragment shader, we can only write output at the end of execution, but memory writes can happen anytime during emulation, and _must be architecturally visible_ immediately - that is, in RISC-V, a write followed by a read to the same address must always return the previously written value.[4]
+However, there is now a glaring issue: If we run multiple ticks per iteration, we cannot use the 128x128 px state area as a cache anymore. In a fragment shader, we can only write output at the end of execution, but memory writes can happen anytime during emulation, and _must be architecturally visible_ immediately - that is, in RISC-V, a write followed by a read to the same address must always return the previously written value.[<a href="#ref4" id="ref4b">4</a>]
 
 With this in mind, the L1 cache only has one place to live: The GPU's register file. I've been told modern architectures should support up to 64 kB of instance state (I suppose it can evict to VRAM?), but in practice the limit you're going to hit is once again the shader compiler. Use too many variables, and we're back at waiting 15 minutes for an "IPC error".
 
-At the time of writing, L1 is a two-way set associative cache with 16 sets and 5 words per line[5]. This comes out to 320 bytes per frame - with the current setup, a good GPU can push up to 4000 instructions per frame, and with `sw` ("store word") being one of them, this cache will fill up in as little as 80. If the cache is full, the CPU stalls until the next `Commit`. A little trick is to double up the `Commit` passes and do two `CPUTick`s as well - that way we can at least get twice the throughput, while only incuring a moderate performance hit for buffer swapping the full 64 MiB twice.
+At the time of writing, L1 is a two-way set associative cache with 16 sets and 5 words per line[<a href="#ref5" id="ref5b">5</a>]. This comes out to 320 bytes per frame - with the current setup, a good GPU can push up to 4000 instructions per frame, and with `sw` ("store word") being one of them, this cache will fill up in as little as 80. If the cache is full, the CPU stalls until the next `Commit`. A little trick is to double up the `Commit` passes and do two `CPUTick`s as well - that way we can at least get twice the throughput, while only incuring a moderate performance hit for buffer swapping the full 64 MiB twice.
 
 This caching strategy is the tradeoff I made for clock speed - memory write performance absolutely **sucks**. But it's decidedly faster than limiting the clockspeed itself, the "real-world" performance is certainly better this way.
 
@@ -399,15 +404,15 @@ As an aside, you might be wondering why I called the cache "L1", as in "Layer 1"
 
 The tricky part here is that this has to go away from being set- or fully-associated, as both of these variants would not only incur massive performance penalties for lots of branching, but also for the repeated texture taps (as I can't allocate any more registers for the L2 without crashing the compiler again). Instead, I'm planning on having only a few registers allocated that contain page base addresses that then point to a linear cache area in the state texture. This is somewhat hard to keep coherent though, and requires a new concept of stalling only until a `Writeback`, so I couldn't get it done in time for the initial presentation.
 
-<small>[4] an exception to this rule is instruction loading, which only needs to be consistent after a `fencei` instruction - we can make use of this by omitting the somewhat expensive cache-load logic for memory reads and just tap the texture directly, simply stalling the CPU on `fencei` until the next `Commit` since it is called very infrequently</small>
+<small id="ref4">[4] an exception to this rule is instruction loading, which only needs to be consistent after a `fencei` instruction - we can make use of this by omitting the somewhat expensive cache-load logic for memory reads and just tap the texture directly, simply stalling the CPU on `fencei` until the next `Commit` since it is called very infrequently <a href="#ref4b">⏎</a></small>
 
-<small>[5] another benefit of perlpp: all of these values are configurable in a single ["header" file](https://github.com/PiMaker/rvc/blob/6208912/_Nix/rvc/src/header.p)</small>
+<small id="ref5">[5] another benefit of perlpp: all of these values are configurable in a single ["header" file](https://github.com/PiMaker/rvc/blob/6208912/_Nix/rvc/src/header.p) <a href="#ref5b">⏎</a></small>
 
 
 ---
 # A Note on Inlining
 
-HLSL has the peculiarity that there are no function calls. *All* functions are inlined at the call site[6], if you call a function four times, it will be included four times in the output assembly. This is of course recursive, so a function that calls other functions will also inline *those* at every callsite.
+HLSL has the peculiarity that there are no function calls. *All* functions are inlined at the call site[<a href="#ref6" id="ref6b">6</a>], if you call a function four times, it will be included four times in the output assembly. This is of course recursive, so a function that calls other functions will also inline *those* at every callsite.
 
 This doesn't sound like a big issue, but it turns out it actually is - one of the biggest performance tricks I learned during development of the emulator, is that avoiding multiple callsites can improve performance quite a bit. I'm not 100% sure why that is, but I would assume it has to with locality/recency in the L1i cache of the GPU. So less code = less assembly = less thrashing in the instruction cache, and thus better performance.
 
@@ -417,7 +422,7 @@ This gives rise to some awkward optimizations, that would produce the opposite r
 
 The C code simply calls `mem_get_word` in the execution path of each instruction. This works, because the function call is cheap. But if it were to be inlined in every instruction that reads from memory, it would slow down the shader a lot. Instead, we do it preventatively - before even executing the instruction-specific code, check by way of the opcode if the instruction *might* need to read a value from memory. If that is the case, figure out where from (which is different for regular `lX` and atomic ops), and load the memory once. This way, `mem_get_word` only needs to be inlined once for the entire instruction emulation path.
 
-We also handle unaligned memory reads creatively. OTOH, this would be the obvious solution:
+We also handle unaligned memory reads creatively. Off the top of my head, this would be the obvious solution:
 ```hlsl
 off = (read_addr & 3) * 8;
 val = mem_get_word(read_addr & (~3)) >> off;
@@ -441,7 +446,7 @@ val |= w2 << ((4 - (do_mem_read & 0x3)) * 8);
 There are several places in the code that seemingly make no sense, but are actually intentionally written with the goal of avoiding inlining. Try to keep that in mind, if you dare read through the source yourself.
 
 
-<small>[6] there is a `[call]` attribute for switch/case, but once again I don't know why you wouldn't just use `[forcecase]`, in my testing it unconditionally made performance worse - it does however actually compile to a jump and return, meaning the capability must exist in shader assembly, but even functions with `[noinline]` (which is a valid attribute) are always inlined...</small>
+<small id="ref6">[6] there is a `[call]` attribute for switch/case, but once again I don't know why you wouldn't just use `[forcecase]`, in my testing it unconditionally made performance worse - it does however actually compile to a jump and return, meaning the capability must exist in shader assembly, but even functions with `[noinline]` (which is a valid attribute) are always inlined... <a href="#ref6b">⏎</a></small>
 
 
 ---
@@ -500,6 +505,9 @@ private uint decodePackedData(int x, int y, int c)
 ```
 <small>(excerpt from [NixDebug.cs](https://github.com/PiMaker/rvc/blob/6208912/_Nix/NixDebug.cs), for decoding - this file is in desperate need of a cleanup :/)</small>
 
+![debug view in-game](../../assets/rvc_debug_display.jpg)
+<small>(the debug display as seen in-game, the spherical buttons allow for single-stepping)</small>
+
 This is fairly expensive, especially since it's running in Udon, so we limit the rendering of this `Camera` to once every 15 frames or so. Certainly not pretty, but works well enough for debugging (and unfortunately also some device state).
 
 
@@ -514,7 +522,7 @@ Once again, the two-layer pagewalk is performed with avoiding inlining in mind. 
 
 ---
 
-There are two devices on the emulated SoC that can issue interrupts - the CLINT timer and the UART. Additionally, software interrupts into both machine and supervisor mode are supported as well. All of this is covered under the umbrella term "trap handling", which deals with IRQs and exceptions. [Most of this logic](https://github.com/PiMaker/rvc/blob/6208912/_Nix/rvc/src/trap.h) is borrowed fairly directly from *riscv-rust* again, with the exception being that PLIC and CLINT are handled all at once.[7]
+There are two devices on the emulated SoC that can issue interrupts - the CLINT timer and the UART. Additionally, software interrupts into both machine and supervisor mode are supported as well. All of this is covered under the umbrella term "trap handling", which deals with IRQs and exceptions. [Most of this logic](https://github.com/PiMaker/rvc/blob/6208912/_Nix/rvc/src/trap.h) is borrowed fairly directly from *riscv-rust* again, with the exception being that PLIC and CLINT are handled all at once.[<a href="#ref7" id="ref7b">7</a>]
 
 The timer's frequency is in sync with the CPU clock, i.e. one clock cycle equals one timer tick. That being said, this is not what our [device tree](https://github.com/PiMaker/rvc/blob/17da347/dts.dts) is communicating to Linux. The frequency given as `timebase-frequency = <0x1000000>;` ranges in the MHz, obviously way faster than what it actually runs at. I'm not entirely certain why that is necessary, but if I set this to a more natural 200 kHz-ish, Linux schedules it's own timer interrupt so frequently as to completely stall the boot process.
 
@@ -529,7 +537,7 @@ Input is rather simple too, using a regular shader parameter to pass the input A
 
 There is currently no disk emulated, since VRChat doesn't support world persistancy at the moment anyway. Linux boots entirely from RAM, the initramfs stays mounted as the rootfs.
 
-<small>[7] Side-note that I mention for no particular reason and definitely didn't spend a full day tracking down a related bug on: Did you know that bitwise negate in Rust is `!`, which, if copied to C, will compile successfully and without warning, but actually perform a *boolean* negate? Now you do! `~` is what you need, obviously.
+<small id="ref7">[7] Side-note that I mention for no particular reason and definitely didn't spend a full day tracking down a related bug on: Did you know that bitwise negate in Rust is `!`, which, if copied to C, will compile successfully and without warning, but actually perform a *boolean* negate? Now you do! `~` is what you need, obviously. <a href="#ref7b">⏎</a></small>
 
 
 ---
