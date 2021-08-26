@@ -1,6 +1,6 @@
 ---
 layout: page
-title: Abusing Pixel Shaders - RISC-V Linux in VRChat
+title: Linux in a Pixel Shader - A RISC-V Emulator for VRChat
 author: _pi_
 date: 25.08.2021
 ---
@@ -11,7 +11,7 @@ Sometimes you get hit with ideas for side-projects that sound absolutely plausib
 
 Usually these ideas appear, I enjoy dissecting them for a few days, and then I move on. But sometimes. Sometimes I decide to double down and get Linux running on my graphics card.
 
-This is the story of how I made a RISC-V emulator within VRChat, and a deep-dive into the unusual techniques required to do it.
+This is the story of how I made the `rvc` RISC-V emulator within VRChat, and a deep-dive into the unusual techniques required to do it.
 
 Here are some specs up front, if you're satisfied with piecing the story together yourself:
 
