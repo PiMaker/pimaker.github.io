@@ -5,7 +5,7 @@ author: _pi_
 date: 25.08.2021
 ---
 
-<small>for comments see [Hacker News](https://news.ycombinator.com/item?id=28312632), [r/programming](https://www.reddit.com/r/programming/comments/pbw5ze/linux_in_a_pixel_shader_a_riscv_emulator_for/) or [r/vrchat](https://www.reddit.com/r/VRchat/comments/pbwae1/i_made_linux_run_in_vrchat_info_in_comments/)</small>
+<small style="display:none">for comments see [Hacker News](https://news.ycombinator.com/item?id=28312632), [r/programming](https://www.reddit.com/r/programming/comments/pbw5ze/linux_in_a_pixel_shader_a_riscv_emulator_for/) or [r/vrchat](https://www.reddit.com/r/VRchat/comments/pbwae1/i_made_linux_run_in_vrchat_info_in_comments/)</small>
 
 # Intro
 
