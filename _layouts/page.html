@@ -7,6 +7,6 @@ layout: default
 <article class="page">
   <h1 class="page-title">{{ page.title }}</h1>
   {% if page.date %}<i>{{ page.date | date: "%-d %B %Y" }}</i>, {% endif %}by {{ page.author }}<br />
-  <!-- <i>Views:</i>&nbsp;<span id="viewCount"></span> -->
+  <i>Views:</i>&nbsp;<span id="viewCount"></span>
   {{ content }}
 </article>
